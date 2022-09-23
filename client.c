@@ -103,15 +103,15 @@ int main(int argc, char **argv)
         // Clean buffers:
         memset(client_message,'\0',sizeof(client_message));
         
-        // // Get input from the user:
-        // printf("Enter message: ");
-        // gets(client_message);
+        // Get input from the user:
+        printf("Enter message: ");
+        gets(client_message);
         
 
-        // if(send(sockfd, client_message, strlen(client_message), 0) < 0){
-        //     printf("Unable to send message\n");
-        //     exit(1);
-        // }
+        if(send(sockfd, client_message, strlen(client_message), 0) < 0){
+            printf("Unable to send message\n");
+            exit(1);
+        }
 
         while ( (n = read(sockfd, recvline, MAXLINE)) > 0) {
             recvline[n] = 0;        /* null terminate */

@@ -62,6 +62,12 @@ int main(int argc, char **argv)
     connfd = accept(listenfd, (struct sockaddr *) &cliaddr, &len);
     printf("Connection from %s, port %d\n",inet_ntop(AF_INET, &cliaddr.sin_addr, buff, sizeof(buff)), ntohs(cliaddr.sin_port));
 
+    // Receive client's message:
+    char buff2[4096];
+    bzero(buff2, 4096);
+    char server_message[4096], client_message[4096];
+    read(connfd, buff2, sizeof(buff2));
+    printf("Message received from client: %s\n", buff2);
 
     // ========= 3. Establish connection to server ==== ///
     if ( (sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
