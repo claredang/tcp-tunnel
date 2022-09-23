@@ -197,19 +197,17 @@ int main(int argc, char **argv)
             exit(1);
         }
 
-        char server_message[2000], client_message[2000];
+        // Send message to tunnel
+        char client_message[2000];
         // Clean buffers:
         memset(client_message,'\0',sizeof(client_message));
-        
-        // // Get input from the user:
-        // printf("Enter message: ");
-        // gets(client_message);
+        strcpy(client_message, "HELLO");
         
 
-        // if(send(sockfd, client_message, strlen(client_message), 0) < 0){
-        //     printf("Unable to send message\n");
-        //     exit(1);
-        // }
+        if(send(sockfd, client_message, sizeof(client_message), 0) < 0){
+            printf("Unable to send message\n");
+            exit(1);
+        }
 
         while ( (n = read(sockfd, recvline, MAXLINE)) > 0) {
             recvline[n] = 0;        /* null terminate */

@@ -97,12 +97,13 @@ int main(int argc, char **argv)
 
     // Read message from server
     while ( (n = read(sockfd, recvline, MAXLINE)) > 0) {
+        printf("Tunnel: Read from server successfully\n");
         recvline[n] = 0;        /* null terminate */
         if (fputs(recvline, stdout) == EOF) {
             printf("fputs error\n");
             exit(1);
         }
-        printf("Tunnel: Read from server successfully\n");
+    
         // Send message to client
         struct message msg;
         ticks = time(NULL);
