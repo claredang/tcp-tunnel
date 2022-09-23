@@ -1,27 +1,14 @@
-// #include <netinet/in.h>
-// #include <time.h>
-// #include <strings.h>
-// #include <stdio.h>
-// #include <string.h>
-// #include <unistd.h>
-// #include <arpa/inet.h>
-// #include <sys/types.h>
-// #include <sys/socket.h>
-
-
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <sys/types.h>
 #include <sys/socket.h>
-#include <stdlib.h>
+#include <stdlib.h>-
 #include <strings.h>
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
 #include <netdb.h>
 #include <time.h>
-
-#define _XOPEN_SOURCE 600
 
 #define MAXLINE     4096    /* max text line length */
 #define LISTENQ     1024    /* 2nd argument to listen() */
@@ -58,6 +45,7 @@ int main(int argc, char **argv)
     
 
     for ( ; ; ) {
+        // ===== 1. Listen from client
         len = sizeof(cliaddr);
 
         connfd = accept(listenfd, (struct sockaddr *) &cliaddr, &len);
@@ -74,27 +62,13 @@ int main(int argc, char **argv)
         int client_port = ntohs(cliaddr.sin_port);
         printf("Connection from %s, port %d\n", client_ip, client_port);
 
-         // Receive client's message:
-        char buff2[4096];
-        bzero(buff2, 4096);
-        char server_message[4096], client_message[4096];
-        read(connfd, buff2, sizeof(buff2));
-        printf("Message received: %s\n: ", buff2);
-
-        // Construct struct message to send
+        // ===== 2. Construct struct message to send
         struct message msg;
-        // Sending time 
-        snprintf(msg.addr, sizeof(msg.addr), "%.400s\n", client_ip);
-        msg.addrlen = sizeof(msg.addr);
-        // write(connfd, msg.addr, msg.addrlen);
-
         ticks = time(NULL);
         snprintf(msg.currtime, sizeof(msg.currtime), "%.24s\r\n", ctime(&ticks));
-        msg.timelen = sizeof(msg.currtime);
-        write(connfd, msg.currtime, msg.timelen);
-        printf("Sending response: %s", msg.currtime);
+        // printf("Sending time: %d\n", msg.currtime);
 
-        // Run who command and send it backs to client
+        // Run who command
         FILE * f = popen( "who|sort", "r" );
         if ( f == 0 ) {
             fprintf( stderr, "Could not execute\n" );
@@ -102,16 +76,12 @@ int main(int argc, char **argv)
         }
         const int BUFSIZE = 1000;
         char payload[ BUFSIZE ];
-        while( fgets( payload, BUFSIZE,  f ) ) {
-            // fprintf( stdout, "%s", buf  );
-        }
+        while( fgets( payload, BUFSIZE,  f ) ) {}
         pclose(f);
 
         snprintf(msg.payload, sizeof(msg.payload), payload);
-        msg.msglen = sizeof(msg.payload);
-        printf("Size of payload: %d", msg.msglen);
-        // write(connfd, msg.msglen, strlen(msg.msglen));
-        printf("Sending who command: %s", msg.payload);
+        write(connfd, &msg, sizeof(msg));
+        // printf("Sending who command: %s\n", msg.payload);
 
 
         close(connfd);
