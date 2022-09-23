@@ -60,14 +60,44 @@ int main(int argc, char **argv)
 
         const char* client_ip = inet_ntop(AF_INET, &cliaddr.sin_addr, buff, sizeof(buff));
         int client_port = ntohs(cliaddr.sin_port);
-        printf("Connection from %s, port %d\n", client_ip, client_port);
+        // printf("Connection from %s, port %d\n", client_ip, client_port);
 
+        // getnameinfo: server name -> IP address
+        struct sockaddr_in sa;
+        char node[NI_MAXHOST];
+
+        memset(&sa, 0, sizeof sa);
+        sa.sin_family = AF_INET;
+        
+        inet_pton(AF_INET, client_ip, &sa.sin_addr);
+
+        int res2 = getnameinfo((struct sockaddr*)&sa, sizeof(sa),
+                            node, sizeof(node),
+                            NULL, 0, NI_NAMEREQD);
+        
+        if (res2) {
+            printf("error: %d\n", res2);
+            printf("%s\n", gai_strerror(res2));
+        }
+        else {
+            printf("Server name: %s\n", node);
+        }
+
+        // getaddrinfo: IP address -> server name
+        struct addrinfo* res = NULL;
+        struct addrinfo hints;
+
+        memset(&hints, 0, sizeof(hints));
+        hints.ai_family = AF_UNSPEC;
+        getaddrinfo(client_ip, NULL, &hints, &res);
+
+        printf("IP address: %s\n", client_ip);
+        
         // ===== 2. Construct struct message to send
         struct message msg;
         ticks = time(NULL);
-        snprintf(msg.currtime, sizeof(msg.currtime), "%.24s\r\n", ctime(&ticks));
-        // printf("Sending time: %d\n", msg.currtime);
-
+        snprintf(msg.currtime, strlen(ctime(&ticks)), "%.24s\r\n", ctime(&ticks));
+       
         // Run who command
         FILE * f = popen( "who|sort", "r" );
         if ( f == 0 ) {
@@ -79,10 +109,8 @@ int main(int argc, char **argv)
         while( fgets( payload, BUFSIZE,  f ) ) {}
         pclose(f);
 
-        snprintf(msg.payload, sizeof(msg.payload), payload);
+        snprintf(msg.payload, strlen(payload), payload);
         write(connfd, &msg, sizeof(msg));
-        // printf("Sending who command: %s\n", msg.payload);
-
 
         close(connfd);
     }
