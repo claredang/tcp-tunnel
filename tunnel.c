@@ -1,14 +1,3 @@
-// #include <netinet/in.h>
-// #include <time.h>
-// #include <strings.h>
-// #include <stdio.h>
-// #include <string.h>
-// #include <unistd.h>
-// #include <arpa/inet.h>
-// #include <sys/types.h>
-// #include <sys/socket.h>
-
-
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <sys/types.h>
@@ -38,11 +27,9 @@ int main(int argc, char **argv)
     struct sockaddr_in servaddr, cliaddr, dest_addr;
     socklen_t len;
     char    buff[MAXLINE];
-    time_t ticks;
     int sockfd, n;
-    char    recvline[MAXLINE + 1];
 
-    // Establish tunnel to receive message from client
+    // 1. ========= Establish tunnel to receive message from client
     listenfd = socket(AF_INET, SOCK_STREAM, 0);
 
     bzero(&servaddr, sizeof(servaddr));
@@ -56,20 +43,20 @@ int main(int argc, char **argv)
 
     listen(listenfd, LISTENQ);
 
-    // Connect to server
     len = sizeof(cliaddr);
 
     connfd = accept(listenfd, (struct sockaddr *) &cliaddr, &len);
-    printf("Connection from %s, port %d\n",inet_ntop(AF_INET, &cliaddr.sin_addr, buff, sizeof(buff)), ntohs(cliaddr.sin_port));
+    printf("Receive request from client %s port %d ",inet_ntop(AF_INET, &cliaddr.sin_addr, buff, sizeof(buff)), ntohs(cliaddr.sin_port));
 
     // Receive client's message:
-    char buff2[4096];
-    bzero(buff2, 4096);
-    char server_message[4096], client_message[4096];
-    read(connfd, buff2, sizeof(buff2));
-    printf("Message received from client: %s\n", buff2);
+    struct message msg_in;
+    if ((n = recv(connfd, &msg_in, sizeof(msg_in), MSG_WAITALL)) == -1) { 
+        perror("recv");
+        exit(1); 
+    }
+    printf("destined to server %s port %s\n", msg_in.addr, msg_in.payload);
 
-    // ========= 3. Establish connection to server ==== ///
+    // ========= 2. Establish connection to server ==== ///
     if ( (sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
         printf("socket error\n");
         exit(1);
@@ -78,11 +65,10 @@ int main(int argc, char **argv)
     bzero(&dest_addr, sizeof(dest_addr));
     dest_addr.sin_family = AF_INET;
     // Change argv to int 
-    // char* p;
-    // int argv_to_int = strtol(argv[2], &p, 10);
-    // servaddr.sin_addr.s_addr = inet_addr[]
-    inet_aton("10.0.0.83", &dest_addr.sin_addr.s_addr); // server_ip
-    dest_addr.sin_port = htons(4444); // server_port
+    char* p2;
+    int argv_to_int2 = strtol(msg_in.payload, &p2, 10);
+    inet_aton(msg_in.addr, &dest_addr.sin_addr.s_addr); // server_ip
+    dest_addr.sin_port = htons(argv_to_int2); // server_port
 
     // if (inet_pton(AF_INET, argv[1], &servaddr.sin_addr) <= 0) {
     //     printf("inet_pton error for %s\n", argv[1]);
@@ -94,26 +80,19 @@ int main(int argc, char **argv)
         exit(1);
     }
 
-
     // Read message from server
-    while ( (n = read(sockfd, recvline, MAXLINE)) > 0) {
-        printf("Tunnel: Read from server successfully\n");
-        recvline[n] = 0;        /* null terminate */
-        if (fputs(recvline, stdout) == EOF) {
-            printf("fputs error\n");
-            exit(1);
-        }
-    
-        // Send message to client
-        struct message msg;
-        ticks = time(NULL);
-        snprintf(msg.currtime, sizeof(msg.currtime), "%.24s\r\n", ctime(&ticks));
-        msg.timelen = sizeof(msg.currtime);
-        write(connfd, msg.currtime, msg.timelen);
-        printf("Sending response: %s", msg.currtime);
-
-        exit(1);
+    struct message server_msg;
+    int numbytes2;
+    if ((numbytes2 = recv(sockfd, &server_msg, sizeof(server_msg), MSG_WAITALL)) == -1) { 
+        perror("recv");
+        exit(1); 
     }
+    // printf("tunnel: receive from server %d'\n", server_msg.timelen);
+
+    // Send message to client
+    write(connfd, &server_msg, sizeof(server_msg));
+
+
     if (n < 0) {
         printf("read error\n");
         exit(1);
