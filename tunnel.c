@@ -87,7 +87,6 @@ int main(int argc, char **argv)
         perror("recv");
         exit(1); 
     }
-    // printf("tunnel: receive from server %d'\n", server_msg.timelen);
 
     // Send message to client
     write(connfd, &server_msg, sizeof(server_msg));
